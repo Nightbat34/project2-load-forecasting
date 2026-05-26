@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Local/editor files
+.idea/
+.vscode/
+.workbuddy/
+
+# Large or private source data should live outside this repo by default.
+*.xlsx
+~$*.xlsx
+
+# Old version files kept out of Git history.
+1.py
+check_data.py
+generate_report.py
+load_forecast.py
+
+# Keep generated project2 deliverables, ignore older loose output files.
+output/*.csv
+output/*.png
+output/*.html
