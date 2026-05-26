@@ -13,13 +13,23 @@ process/
       project2_report.html
       project2_final_prediction_2015_01_11_17.csv
       project2_model_performance.csv
+      project2_training_log.csv
+      project2_model_selection.csv
+      project2_statistical_tests.csv
+      project2_model_manifest.csv
+      project2_model_manifest.json
       project2_regression_summary.csv
       project2_weather_correlations.csv
       project2_validation_predictions.csv
+      models/
+        load_mean_*.joblib
+        load_max_*.joblib
+        load_min_*.joblib
       01_weather_regression.png
-      02_validation_fit.png
-      03_final_prediction.png
-      04_history_forecast_context.png
+      02_model_training_comparison.png
+      03_validation_fit.png
+      04_final_prediction.png
+      05_history_forecast_context.png
 ```
 
 ## 数据文件
@@ -54,6 +64,7 @@ output/project2/
 
 - `output/project2/project2_report.html`：项目二完整报告
 - `output/project2/project2_final_prediction_2015_01_11_17.csv`：最终 7 天预测结果
+- `output/project2/models/`：最终选中模型文件（joblib 格式）
 
 ## GitHub 上传流程
 

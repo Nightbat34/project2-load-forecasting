@@ -1,0 +1,4 @@
+﻿target,selected_model,selection_rule,validation_RMSE,cv_RMSE_mean,model_file
+日平均负荷,RandomForest,优先验证集 RMSE 最小；若接近，再参考 TimeSeriesSplit 平均 RMSE,248.93,555.96,output\project2\models\load_mean_RandomForest.joblib
+日最高负荷,Stacking,优先验证集 RMSE 最小；若接近，再参考 TimeSeriesSplit 平均 RMSE,328.55,756.7,output\project2\models\load_max_Stacking.joblib
+日最低负荷,RandomForest,优先验证集 RMSE 最小；若接近，再参考 TimeSeriesSplit 平均 RMSE,199.86,403.81,output\project2\models\load_min_RandomForest.joblib

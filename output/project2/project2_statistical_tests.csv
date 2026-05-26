@@ -1,0 +1,4 @@
+﻿target,best_model,second_model,paired_t_stat,paired_t_p_value,t_test_conclusion,mcnemar_table,mcnemar_chi2,mcnemar_p_value
+日平均负荷,RandomForest,Stacking,0.0156,0.9876,差异不显著,"{""both_correct"": 42, ""second_only"": 5, ""best_only"": 11, ""both_wrong"": 3}",1.5625,0.2113
+日最高负荷,Stacking,RandomForest,-1.7491,0.0854,差异不显著,"{""both_correct"": 45, ""second_only"": 4, ""best_only"": 4, ""both_wrong"": 8}",0.125,0.7237
+日最低负荷,RandomForest,Stacking,0.3543,0.7244,差异不显著,"{""both_correct"": 46, ""second_only"": 2, ""best_only"": 6, ""both_wrong"": 7}",1.125,0.2888

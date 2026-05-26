@@ -1,8 +1,8 @@
 ﻿日期,星期,预测日平均(MW),预测日最高(MW),预测日最低(MW),均值模型,最高模型,最低模型
-2015-01-11,周日,5872.97,7452.32,4445.24,XGBoost,XGBoost,XGBoost
-2015-01-12,周一,6560.32,8650.99,3981.12,XGBoost,XGBoost,XGBoost
-2015-01-13,周二,6868.7,8836.15,4708.36,XGBoost,XGBoost,XGBoost
-2015-01-14,周三,6804.49,8952.13,4731.02,XGBoost,XGBoost,XGBoost
-2015-01-15,周四,6831.02,8968.03,4783.6,XGBoost,XGBoost,XGBoost
-2015-01-16,周五,6678.33,8557.71,4742.16,XGBoost,XGBoost,XGBoost
-2015-01-17,周六,6267.22,8077.98,4659.47,XGBoost,XGBoost,XGBoost
+2015-01-11,周日,5973.06,7540.26,4499.03,RandomForest,Stacking,RandomForest
+2015-01-12,周一,6561.34,8512.31,4202.87,RandomForest,Stacking,RandomForest
+2015-01-13,周二,6729.15,8619.84,4637.23,RandomForest,Stacking,RandomForest
+2015-01-14,周三,6687.49,8541.95,4627.13,RandomForest,Stacking,RandomForest
+2015-01-15,周四,6644.22,8402.75,4615.23,RandomForest,Stacking,RandomForest
+2015-01-16,周五,6451.09,8196.06,4468.62,RandomForest,Stacking,RandomForest
+2015-01-17,周六,6280.26,7874.27,4531.72,RandomForest,Stacking,RandomForest
