@@ -104,6 +104,8 @@ def load_daily_data() -> pd.DataFrame:
     if not DATA_PATH.exists():
         raise FileNotFoundError(f"Data file not found: {DATA_PATH}")
 
+    # 原始负荷表是“每天一行、96个15分钟采样点”的宽表；建模前先压缩成日粒度。
+    # 这样能直接对应题目要求的日最高、日最低、日平均三个预测目标。
     load_raw = pd.read_excel(DATA_PATH, sheet_name="Area_Load")
     weather_raw = pd.read_excel(DATA_PATH, sheet_name="Area_Weather")
     weather_raw.columns = ["YMD", "temp_max", "temp_min", "temp_avg", "humidity", "rainfall"]
@@ -125,12 +127,17 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     df["month"] = df["date"].dt.month
     df["day_of_year"] = df["date"].dt.dayofyear
     df["is_weekend"] = (df["dayofweek"] >= 5).astype(int)
+
+    # 周期特征不能直接用“月份=12、1”这种数值距离，因为12月和1月在时间上相邻。
+    # sin/cos 编码把周期映射到圆上，保留“首尾相接”的季节/星期规律。
     df["month_sin"] = np.sin(2 * np.pi * df["month"] / 12)
     df["month_cos"] = np.cos(2 * np.pi * df["month"] / 12)
     df["dow_sin"] = np.sin(2 * np.pi * df["dayofweek"] / 7)
     df["dow_cos"] = np.cos(2 * np.pi * df["dayofweek"] / 7)
     df["doy_sin"] = np.sin(2 * np.pi * df["day_of_year"] / 365)
     df["doy_cos"] = np.cos(2 * np.pi * df["day_of_year"] / 365)
+
+    # HDD/CDD 是电力负荷常用气象衍生变量：低温带来供热需求，高温带来制冷需求。
     df["temp_range"] = df["temp_max"] - df["temp_min"]
     df["hdd"] = np.maximum(18 - df["temp_avg"], 0)
     df["cdd"] = np.maximum(df["temp_avg"] - 26, 0)
@@ -140,10 +147,15 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
 def make_target_features(df: pd.DataFrame, target: str) -> tuple[pd.DataFrame, list[str]]:
     out = df.copy()
     lag_features: list[str] = []
+
+    # 负荷序列有强惯性和周周期：昨天、上周同日、两周前同日通常是强预测信号。
+    # 每个目标单独构造滞后项，避免用“日均负荷”的历史去预测“日最高/最低”时混淆目标。
     for lag in [1, 7, 14]:
         col = f"{target}_lag_{lag}"
         out[col] = out[target].shift(lag)
         lag_features.append(col)
+
+    # 滚动均值/标准差描述近期负荷水平和波动程度，是短期预测里很实用的平滑特征。
     for win in [7, 14]:
         mean_col = f"{target}_roll_mean_{win}"
         std_col = f"{target}_roll_std_{win}"
@@ -155,6 +167,8 @@ def make_target_features(df: pd.DataFrame, target: str) -> tuple[pd.DataFrame, l
 
 def build_weather_regression(train_2012_2014: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     corr_rows: list[dict[str, Any]] = []
+
+    # Pearson 相关系数用于快速判断单个气象因素与负荷的线性相关方向和强弱。
     for target, label in TARGETS.items():
         for feature in MODEL_WEATHER:
             corr_rows.append(
@@ -170,6 +184,8 @@ def build_weather_regression(train_2012_2014: pd.DataFrame) -> tuple[pd.DataFram
     for target, label in TARGETS.items():
         model_df = train_2012_2014[[target] + REG_WEATHER].dropna()
         X = sm.add_constant(model_df[REG_WEATHER])
+
+        # OLS 是 Gaussian + identity link 的 GLM 特例；这里用于解释气象变量的边际影响。
         result = sm.OLS(model_df[target], X).fit()
         for term in ["const"] + REG_WEATHER:
             ols_rows.append(
@@ -186,7 +202,10 @@ def build_weather_regression(train_2012_2014: pd.DataFrame) -> tuple[pd.DataFram
 
 
 def candidate_models() -> dict[str, Any]:
+    # Ridge：线性可解释基线，加入 L2 正则化缓解多重共线性。
     ridge = Pipeline([("StandardScaler", StandardScaler()), ("Ridge", Ridge(alpha=20.0))])
+
+    # RandomForest：Bagging 思想，通过多棵树的平均降低方差，通常对非线性和异常点更稳健。
     rf = RandomForestRegressor(
         n_estimators=120,
         max_depth=10,
@@ -194,6 +213,8 @@ def candidate_models() -> dict[str, Any]:
         random_state=42,
         n_jobs=1,
     )
+
+    # XGBoost：Boosting 思想，后续树持续拟合前一轮残差，适合捕捉复杂非线性。
     xgb = XGBRegressor(
         n_estimators=90,
         max_depth=3,
@@ -206,6 +227,8 @@ def candidate_models() -> dict[str, Any]:
         n_jobs=1,
         verbosity=0,
     )
+
+    # Stacking：先训练多个基模型，再用元学习器学习如何组合它们的输出。
     stacking = StackingRegressor(
         estimators=[
             ("Ridge", clone(ridge)),
@@ -233,6 +256,7 @@ def params_text(model: Any) -> str:
 
 
 def kfold_rmse(model: Any, X: pd.DataFrame, y: pd.Series) -> tuple[float, float, list[float]]:
+    # 时间序列不能随机打乱做普通 K 折；TimeSeriesSplit 保证验证集永远晚于训练集。
     splitter = TimeSeriesSplit(n_splits=3)
     scores: list[float] = []
     for train_idx, test_idx in splitter.split(X):
@@ -248,6 +272,7 @@ def bootstrap_rmse(model: Any, X: pd.DataFrame, y: pd.Series, repeats: int = 6) 
     n = len(X)
     scores: list[float] = []
     for _ in range(repeats):
+        # 自助法：有放回抽样形成训练集，没被抽到的样本作为袋外 OOB 测试集。
         sample_idx = rng.integers(0, n, size=n)
         oob_mask = np.ones(n, dtype=bool)
         oob_mask[np.unique(sample_idx)] = False
@@ -271,12 +296,15 @@ def fit_and_evaluate(daily: pd.DataFrame) -> tuple[dict[str, TargetFit], pd.Data
     for target in TARGET_ORDER:
         label = TARGETS[target]
         feature_df, features = make_target_features(daily, target)
+
+        # 题目要求用 2012-2014 年负荷与气象数据建模；dropna 会去掉滞后特征不完整的开头日期。
         model_df = feature_df[
             (feature_df["date"] >= "2012-01-01")
             & (feature_df["date"] <= "2014-12-31")
             & feature_df[target].notna()
         ].dropna(subset=features + [target])
 
+        # 留出法：用较早数据训练，用 2014 年末两个月模拟“未来未知数据”做验证。
         train_mask = model_df["date"] <= "2014-10-31"
         val_mask = model_df["date"] >= "2014-11-01"
         X_train, y_train = model_df.loc[train_mask, features], model_df.loc[train_mask, target]
@@ -287,14 +315,20 @@ def fit_and_evaluate(daily: pd.DataFrame) -> tuple[dict[str, TargetFit], pd.Data
         for model_name, model in candidate_models().items():
             start = time.perf_counter()
             fitted = clone(model)
+
+            # fit 是训练步骤：模型根据训练集 X_train/y_train 学习参数或树结构。
             fitted.fit(X_train, y_train)
             elapsed = time.perf_counter() - start
+
+            # predict 是验证步骤：只用验证集特征预测，再与真实 y_val 比较误差。
             val_pred = fitted.predict(X_val)
             model_preds[model_name] = val_pred
 
             holdout = metrics_dict(y_val, val_pred)
             cv_mean, cv_std, cv_scores = kfold_rmse(model, X_all, y_all)
             boot_mean, boot_std = bootstrap_rmse(model, X_train, y_train)
+
+            # 同时记录留出法、时间序列交叉验证、自助法，避免只看单一指标做结论。
             performance_rows.append(
                 {
                     "target": label,
@@ -336,9 +370,12 @@ def fit_and_evaluate(daily: pd.DataFrame) -> tuple[dict[str, TargetFit], pd.Data
         best_row = perf_target.iloc[0]
         best_name = str(best_row["model"])
 
+        # 选出最优模型后，用 2012-2014 全量样本重新训练，得到最终可交付模型。
         final_estimator = clone(candidate_models()[best_name])
         final_estimator.fit(X_all, y_all)
         model_path = MODEL_DIR / f"{target}_{best_name}.joblib"
+
+        # joblib 文件保存了模型对象和特征列顺序，后续复现预测时必须使用同一套特征顺序。
         joblib.dump({"model": final_estimator, "features": features, "target": target}, model_path)
 
         fits[target] = TargetFit(target, label, best_name, final_estimator, features, model_path)
@@ -386,6 +423,8 @@ def statistical_tests(performance_df: pd.DataFrame, validation_df: pd.DataFrame)
     for label in [TARGETS[t] for t in TARGET_ORDER]:
         ranking = performance_df[performance_df["target"] == label].sort_values("RMSE")
         best, second = ranking.iloc[0]["model"], ranking.iloc[1]["model"]
+
+        # 配对检验必须保证两个模型在完全相同的验证日期上比较误差。
         pivot = validation_df[(validation_df["target"] == label) & (validation_df["model"].isin([best, second]))].pivot(
             index="date", columns="model", values=["actual", "predicted", "absolute_error"]
         )
@@ -394,6 +433,7 @@ def statistical_tests(performance_df: pd.DataFrame, validation_df: pd.DataFrame)
         err_second = pivot["absolute_error"][second]
         t_stat, p_value = ttest_rel(err_best, err_second)
 
+        # McNemar 原本用于分类。这里把“误差<=实际值5%”转成正确/错误，再比较犯错模式。
         tolerance = 0.05 * actual
         best_ok = err_best <= tolerance
         second_ok = err_second <= tolerance
@@ -423,6 +463,8 @@ def statistical_tests(performance_df: pd.DataFrame, validation_df: pd.DataFrame)
 def forecast_recursive(daily: pd.DataFrame, fits: dict[str, TargetFit]) -> pd.DataFrame:
     pred_dates = pd.date_range("2015-01-11", "2015-01-17", freq="D")
     known_daily = daily[daily["date"] <= "2015-01-10"].copy()
+
+    # history 既保存真实历史负荷，也会逐日追加预测值，支撑后续日期的 lag_1 递推。
     history = {target: dict(zip(known_daily["date"], known_daily[target])) for target in TARGETS}
     feature_lookup = daily.set_index("date")[MODEL_WEATHER + CALENDAR_FEATURES].to_dict("index")
     rows: list[dict[str, Any]] = []
@@ -433,6 +475,9 @@ def forecast_recursive(daily: pd.DataFrame, fits: dict[str, TargetFit]) -> pd.Da
             feature_values: dict[str, float] = dict(feature_lookup[date])
             last7: list[float] = []
             last14: list[float] = []
+
+            # 对 2015-01-12 之后的日期，date-1 可能已经是上一天预测值，而不是真实值。
+            # 这样做符合短期滚动预测场景，也避免使用目标期缺失真实负荷造成数据泄漏。
             for lag in range(1, 15):
                 value = history[target].get(date - pd.Timedelta(days=lag), np.nan)
                 if lag in [1, 7, 14]:
@@ -448,6 +493,8 @@ def forecast_recursive(daily: pd.DataFrame, fits: dict[str, TargetFit]) -> pd.Da
             feature_values[f"{target}_roll_std_14"] = float(np.nanstd(arr14, ddof=1))
             X = pd.DataFrame([feature_values])[fit.features]
             pred = float(fit.estimator.predict(X)[0])
+
+            # 把今天预测值写入 history，供明天的 lag_1 和滚动窗口使用。
             history[target][date] = pred
             row[f"pred_{target}"] = pred
             row[f"model_{target}"] = fit.model_name
@@ -457,6 +504,8 @@ def forecast_recursive(daily: pd.DataFrame, fits: dict[str, TargetFit]) -> pd.Da
     fit_base = daily[(daily["date"] >= "2012-01-01") & (daily["date"] <= "2014-12-31")]
     max_gap = float((fit_base["load_max"] - fit_base["load_mean"]).median())
     min_gap = float((fit_base["load_mean"] - fit_base["load_min"]).median())
+
+    # 物理约束修正：日最低 <= 日平均 <= 日最高。
     pred_df.loc[pred_df["pred_load_min"] > pred_df["pred_load_mean"], "pred_load_min"] = (
         pred_df["pred_load_mean"] - min_gap
     )
