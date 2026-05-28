@@ -64,8 +64,8 @@
   {
     "target":"load_min",
     "target_cn":"日最低负荷",
-    "selected_model":"RandomForest",
-    "model_file":"output\\project2\\models\\load_min_RandomForest.joblib",
+    "selected_model":"XGBoost",
+    "model_file":"output\\project2\\models\\load_min_XGBoost.joblib",
     "feature_count":22,
     "features":[
       "temp_max",
