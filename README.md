@@ -102,6 +102,19 @@ python project2_forecast.py
 python project2_forecast.py
 ```
 
+默认情况下，脚本会让 XGBoost 使用 GPU：
+
+```text
+PROJECT2_XGB_DEVICE=cuda
+```
+
+如果某台电脑没有可用 NVIDIA GPU，或者 CUDA 环境不稳定，可以强制使用 CPU：
+
+```powershell
+$env:PROJECT2_XGB_DEVICE="cpu"
+python project2_forecast.py
+```
+
 运行完成后会生成：
 
 ```text
@@ -303,7 +316,7 @@ candidate_models()
 ```text
 Ridge：线性基线模型，可解释性强
 RandomForest：Bagging 思想，降低方差
-XGBoost：Boosting 思想，逐步修正残差
+XGBoost：Boosting 思想，逐步修正残差；本项目默认 device="cuda"，可使用 GPU 加速
 Stacking：多模型融合，用元学习器整合多个模型输出
 ```
 
