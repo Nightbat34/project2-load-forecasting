@@ -48,6 +48,7 @@ OUTPUT_DIR = ROOT / "output" / "project2"
 MODEL_DIR = OUTPUT_DIR / "models"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
+XGB_DEVICE = os.environ.get("PROJECT2_XGB_DEVICE", "cuda")
 
 plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Arial Unicode MS", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
@@ -222,6 +223,7 @@ def candidate_models() -> dict[str, Any]:
         subsample=0.85,
         colsample_bytree=0.9,
         objective="reg:squarederror",
+        device=XGB_DEVICE,
         random_state=42,
         tree_method="hist",
         n_jobs=1,
@@ -249,7 +251,7 @@ def candidate_models() -> dict[str, Any]:
 
 def params_text(model: Any) -> str:
     params = model.get_params(deep=False)
-    compact = {k: v for k, v in params.items() if k in {"alpha", "n_estimators", "max_depth", "learning_rate", "subsample", "colsample_bytree", "min_samples_leaf", "cv"}}
+    compact = {k: v for k, v in params.items() if k in {"alpha", "n_estimators", "max_depth", "learning_rate", "subsample", "colsample_bytree", "min_samples_leaf", "cv", "device"}}
     if not compact and hasattr(model, "steps"):
         compact = {"pipeline": "StandardScaler + Ridge(alpha=20)"}
     return json.dumps(compact, ensure_ascii=False, default=str)
