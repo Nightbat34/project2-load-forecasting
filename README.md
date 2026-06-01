@@ -13,16 +13,37 @@
 3. 预测 2015-01-11 至 2015-01-17 的日最高、日最低、日平均负荷。
 4. 在报告中体现数据处理、特征工程、模型训练、模型评估、模型选择、统计检验和最终预测全过程。
 
-## 二、目录结构
+## 二、三次汇报安排
+
+本仓库按老师要求拆成三次汇报推进：
+
+1. **第一部分：数据处理**  
+   已完成，材料位于 `output/report1_data_processing/`。重点展示原始数据理解、缺失值检查、数据分布、极端值识别、天气合并、衍生变量、特征来源和参考权重。
+2. **第二部分：算法模型**  
+   下周继续完善，重点展示候选模型、训练过程、调参、模型比较和模型文件选择。
+3. **第三部分：整体交付**  
+   后续整合网页、报告书、最终结果和答辩材料。
+
+## 三、目录结构
 
 ```text
 process/
-  project2_forecast.py                  # 主程序：数据处理、训练、预测、生成报告
+  project2_forecast.py                  # 主程序：数据处理、训练、预测、导出图表/CSV/模型
+  report1_data_processing.py            # 第一部分“数据处理”汇报材料生成脚本
   requirements.txt                      # Python 依赖
   README.md                             # 项目说明、运行方法、汇报方法
   output/
+    report1_data_processing/
+      report1_data_processing.html      # 第一部分：数据处理网页汇报
+      report1_data_processing.pdf       # 第一部分：数据处理 PDF 备份
+      report1_speaker_notes.md          # 第一部分讲稿
+      report1_presentation_guide.md     # 第一部分演示指南
+      report1_outlier_summary.csv
+      report1_physical_quality_checks.csv
+      report1_feature_dictionary.csv
+      report1_feature_weights.csv
+      assets/                           # 第一部分图表与代码截图
     project2/
-      project2_report.html              # 网页汇报，重点查看
       project2_final_prediction_2015_01_11_17.csv
       project2_model_performance.csv
       project2_training_log.csv
@@ -36,7 +57,7 @@ process/
       models/
         load_mean_RandomForest.joblib
         load_max_Stacking.joblib
-        load_min_RandomForest.joblib
+        load_min_XGBoost.joblib
       01_weather_regression.png
       02_model_training_comparison.png
       03_validation_fit.png
@@ -44,7 +65,7 @@ process/
       05_history_forecast_context.png
 ```
 
-## 三、环境准备
+## 四、环境准备
 
 建议使用 Python 3.10 或以上版本。
 
@@ -69,7 +90,7 @@ scipy         T 检验等统计检验
 joblib        保存训练后的模型文件
 ```
 
-## 四、数据文件位置
+## 五、数据文件位置
 
 脚本默认读取：
 
@@ -94,7 +115,31 @@ $env:LOAD_DATA_PATH="F:\Practicum\Data Mining Practicum\Data\附件1-电网负�
 python project2_forecast.py
 ```
 
-## 五、怎么运行
+## 六、怎么运行
+
+### 1. 生成第一部分“数据处理”汇报
+
+在 `process` 文件夹中运行：
+
+```powershell
+python report1_data_processing.py
+```
+
+生成目录：
+
+```text
+output/report1_data_processing/
+```
+
+第一部分重点查看：
+
+```text
+output/report1_data_processing/report1_data_processing.html
+output/report1_data_processing/report1_data_processing.pdf
+output/report1_data_processing/report1_speaker_notes.md
+```
+
+### 2. 运行项目二训练与预测主程序
 
 在 `process` 文件夹中运行：
 
@@ -121,17 +166,26 @@ python project2_forecast.py
 output/project2/
 ```
 
-重点查看：
+重点查看 CSV、图表和模型文件：
 
 ```text
-output/project2/project2_report.html
+output/project2/project2_final_prediction_2015_01_11_17.csv
+output/project2/project2_model_performance.csv
+output/project2/project2_model_selection.csv
+output/project2/models/
 ```
 
-这个 HTML 是最终网页汇报文件，包含过程解释、公式推导、模型训练过程、模型选择、统计检验和最终预测结果。
+说明：`project2_forecast.py` 现在是纯源代码版本，不再生成 HTML 网页；网页汇报由独立的汇报脚本负责维护。
 
-## 六、怎么演示
+## 七、怎么演示
 
-建议演示顺序如下，控制在 5-8 分钟比较合适。
+当前已完成的是第一部分“数据处理”。建议先打开：
+
+```text
+output/report1_data_processing/report1_data_processing.html
+```
+
+下周继续做第二部分“算法模型”。下面的模型讲解内容先作为后续汇报准备材料保留。
 
 ### 1. 先说明业务背景
 
@@ -141,7 +195,7 @@ output/project2/project2_report.html
 
 ### 2. 再说明数据处理
 
-打开网页报告第 1 节。
+打开第一部分网页报告第 1-4 节。
 
 讲法：
 
@@ -157,7 +211,7 @@ output/project2/project2_report.html
 
 ### 3. 讲特征工程
 
-打开网页报告第 2 节。
+打开第一部分网页报告第 8-11 节。
 
 讲法：
 
@@ -221,7 +275,7 @@ Bootstrap：自助法，有放回抽样，用袋外样本估计泛化误差
 ```text
 日平均负荷：RandomForest
 日最高负荷：Stacking
-日最低负荷：RandomForest
+日最低负荷：XGBoost
 ```
 
 模型文件：
@@ -229,7 +283,7 @@ Bootstrap：自助法，有放回抽样，用袋外样本估计泛化误差
 ```text
 output/project2/models/load_mean_RandomForest.joblib
 output/project2/models/load_max_Stacking.joblib
-output/project2/models/load_min_RandomForest.joblib
+output/project2/models/load_min_XGBoost.joblib
 ```
 
 ### 7. 讲统计检验
@@ -254,7 +308,7 @@ output/project2/models/load_min_RandomForest.joblib
 output/project2/project2_final_prediction_2015_01_11_17.csv
 ```
 
-## 七、核心代码怎么读
+## 八、核心代码怎么读
 
 主代码文件：
 
@@ -363,27 +417,33 @@ forecast_recursive()
 保证不会把预测目标期的缺失真实负荷泄漏进模型。
 ```
 
-### 8. 生成图表和网页报告
+### 8. 生成图表和结果文件
 
 ```python
 save_figures()
-generate_report()
 save_outputs()
 ```
 
 作用：
 
 ```text
-保存图表、CSV、模型清单和网页报告。
+保存图表、CSV、模型清单和最终预测结果。
+网页汇报由 report1_data_processing.py 等独立汇报脚本生成。
 ```
 
-## 八、输出文件怎么解释
+## 九、输出文件怎么解释
 
 ```text
-project2_report.html
+output/report1_data_processing/report1_data_processing.html
 ```
 
-最终网页汇报，答辩时优先打开。
+第一部分“数据处理”网页汇报，当前答辩/阶段汇报优先打开。
+
+```text
+output/report1_data_processing/report1_data_processing.pdf
+```
+
+第一部分 PDF 备份，浏览器环境不稳定时使用。
 
 ```text
 project2_final_prediction_2015_01_11_17.csv
@@ -427,7 +487,7 @@ models/*.joblib
 
 训练好的最终模型文件，可复用。
 
-## 九、GitHub 版本管理方法
+## 十、GitHub 版本管理方法
 
 查看当前改动：
 
@@ -450,7 +510,7 @@ git push
 
 如果命令行 push 网络不稳定，可以使用 GitHub Desktop，点击 `Push origin`。
 
-## 十、汇报时的简短总结
+## 十一、汇报时的简短总结
 
 可以用这段作为结尾：
 

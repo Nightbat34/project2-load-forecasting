@@ -3,16 +3,14 @@
 """
 Project 2: short-term power load forecasting.
 
-The script produces a review-ready project report for:
-1. Weather-load regression analysis on 2012-01-01 to 2014-12-31.
-2. Model training, evaluation, comparison, and saved final models.
-3. Forecasting daily max/min/mean load for 2015-01-11 to 2015-01-17.
+This source-code version keeps the data processing, model training,
+evaluation, model saving, chart exporting, and final prediction workflow.
+HTML/web report generation is intentionally excluded; webpage presentation
+materials are maintained by separate report scripts.
 """
 
 from __future__ import annotations
 
-import base64
-import html
 import json
 import os
 import time
@@ -598,107 +596,6 @@ def save_figures(
     plt.close(fig)
 
 
-def image_uri(path: Path) -> str:
-    return "data:image/png;base64," + base64.b64encode(path.read_bytes()).decode("ascii")
-
-
-def fmt_df(df: pd.DataFrame, float_format: str = "{:.3f}") -> str:
-    def fmt(value: Any) -> Any:
-        if isinstance(value, float):
-            return float_format.format(value)
-        return html.escape(str(value)) if isinstance(value, str) else value
-
-    return df.map(fmt).to_html(index=False, escape=False, border=0, classes="data-table")
-
-
-def plan_table() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            ["样本集划分与模型评估", "留出法 Hold-out（单次训练/验证划分）", "使用 2012-01-15 至 2014-10-31 训练，2014-11-01 至 2014-12-31 验证；说明单次划分可能受时间窗口影响。"],
-            ["样本集划分与模型评估", "k 折交叉验证 K-fold Cross Validation（时间序列版）", "使用 TimeSeriesSplit(n_splits=5) 保持时间先后顺序，报告 5 折 RMSE 均值和标准差。"],
-            ["样本集划分与模型评估", "自助法 Bootstrap（有放回抽样）", "对训练集重复有放回抽样 20 次，以袋外样本 OOB 估计 RMSE 分布。"],
-            ["模型性能度量指标分析", "回归指标 Regression Metrics（RMSE/MAE/MAPE/R2）", "本题为连续负荷预测，不直接使用混淆矩阵/ROC；用 RMSE、MAE、MAPE、R2 评价误差大小和解释度。"],
-            ["模型实质性差异判别", "配对样本 T 检验 Paired T-test（同一日期误差配对）", "在相同验证日期上比较最优模型与次优模型的绝对误差，检验差异是否显著。"],
-            ["模型实质性差异判别", "McNemar 检验（阈值化正确/错误）", "将预测误差是否小于实际值 5% 视为正确/错误，构造 2x2 表比较两个模型犯错模式。"],
-            ["广义线性模型 GLM 拓展", "指数族分布与联系函数", "连续负荷近似高斯分布，采用恒等联系函数 g(mu)=mu，得到线性回归/Ridge 基线。"],
-            ["集成学习策略实践", "Boosting/Bagging/Stacking", "XGBoost 体现 Boosting，RandomForest 体现 Bagging，StackingRegressor 体现 Stacking。"],
-            ["数据分析模型设计", "原始数据分析、数据集制作、算法选型", "宽表 96 点/天转换为日指标，构造气象、周期、滞后和滚动特征，对比候选模型。"],
-            ["模型研发与评估", "训练、调参、评估、模型固化", "训练日志、验证对比、统计检验、最终模型 joblib 文件全部输出到 output/project2。"],
-            ["项目文档编制", "网页报告", "将公式推导、过程、结果、结论写入 project2_report.html。"],
-        ],
-        columns=["项目模块", "实训任务", "本项目体现方式"],
-    )
-
-
-def generate_report(
-    daily: pd.DataFrame,
-    corr_df: pd.DataFrame,
-    ols_df: pd.DataFrame,
-    performance_df: pd.DataFrame,
-    validation_df: pd.DataFrame,
-    training_log_df: pd.DataFrame,
-    selection_df: pd.DataFrame,
-    tests_df: pd.DataFrame,
-    manifest_df: pd.DataFrame,
-    pred_df: pd.DataFrame,
-) -> None:
-    target_missing_daily = daily[(daily["date"] >= "2015-01-11") & (daily["date"] <= "2015-01-17")][["load_max", "load_min", "load_mean"]].isna().sum().sum()
-    target_missing_points = int(target_missing_daily / 3 * 96)
-    corr_rank = (
-        corr_df.assign(abs_r=lambda d: d["pearson_r"].abs())
-        .sort_values(["target", "abs_r"], ascending=[True, False])
-        .groupby("target")
-        .head(5)[["target", "weather_factor", "pearson_r"]]
-    )
-    final_table = pred_df[["date", "weekday", "pred_load_mean", "pred_load_max", "pred_load_min", "model_load_mean", "model_load_max", "model_load_min"]].copy()
-    final_table["date"] = final_table["date"].dt.strftime("%Y-%m-%d")
-    for col in ["pred_load_mean", "pred_load_max", "pred_load_min"]:
-        final_table[col] = final_table[col].round(2)
-    final_table.columns = ["日期", "星期", "预测日平均(MW)", "预测日最高(MW)", "预测日最低(MW)", "均值模型", "最高模型", "最低模型"]
-
-    css = """
-body{margin:0;background:#f5f7fb;color:#1f2937;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;line-height:1.72}
-header{background:#15395b;color:white;padding:44px 56px}header h1{margin:0 0 10px;font-size:30px}header p{margin:0;color:#dbeafe}
-main{max-width:1180px;margin:28px auto 56px;padding:0 24px}section{background:white;border:1px solid #e5e7eb;border-radius:8px;padding:26px 30px;margin-bottom:22px;box-shadow:0 1px 5px rgba(15,23,42,.05)}
-h2{margin:0 0 14px;font-size:21px;color:#15395b}h3{margin:20px 0 10px;font-size:16px;color:#2563eb}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}.card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;background:#f8fafc}.label{color:#64748b;font-size:12px}.value{color:#0f172a;font-size:22px;font-weight:800}
-.note{border-left:4px solid #2563eb;background:#eff6ff;padding:12px 16px;border-radius:0 8px 8px 0}.warn{border-left-color:#d97706;background:#fffbeb}
-img{max-width:100%;border-radius:8px;border:1px solid #e5e7eb}table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 16px}th{background:#1f3a5f;color:white;text-align:left;padding:8px 10px}td{border-bottom:1px solid #e5e7eb;padding:8px 10px;vertical-align:top}tr:nth-child(even) td{background:#f8fafc}code{background:#eef2ff;padding:2px 6px;border-radius:4px}.formula{background:#0f172a;color:#e5e7eb;border-radius:8px;padding:14px 18px;font-family:Consolas,monospace;white-space:pre-wrap}
-@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-"""
-    report = f"""<!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="utf-8"><title>项目二：电力系统短期负荷预测</title><style>{css}</style></head>
-<body><header><h1>项目二：电力系统短期负荷预测</h1><p>过程型网页汇报：从数据理解、公式推导、模型训练、评估检验到最终模型固化。</p></header><main>
-<section><h2>0. 实训计划要求与本项目对应关系</h2><p>下表把实训项目计划中的关键任务映射到本项目实现，分类任务中的混淆矩阵/ROC 在本题连续回归场景下不直接适用，因此报告改用回归指标，并补充阈值化 McNemar 检验。</p>{fmt_df(plan_table())}</section>
-<section><h2>1. 数据理解与任务定义</h2><div class="grid"><div class="card"><div class="label">原始负荷天数</div><div class="value">{len(daily)}</div></div><div class="card"><div class="label">采样频率</div><div class="value">96点/天</div></div><div class="card"><div class="label">建模数据期</div><div class="value">2012-2014</div></div><div class="card"><div class="label">预测目标缺失点</div><div class="value">{target_missing_points}</div></div></div><p class="note">2015-01-11 至 2015-01-17 的负荷 15 分钟数据全部缺失，正好是待预测目标；同一时间段气象数据完整，因此可作为外生变量。</p><div class="formula">日最高负荷: y_max(d)=max(x_d,1,...,x_d,96)
-日最低负荷: y_min(d)=min(x_d,1,...,x_d,96)
-日平均负荷: y_mean(d)=1/96 * Σ x_d,t</div></section>
-<section><h2>2. 特征工程推导</h2><p>为了同时表达气象驱动、星期周期和短期惯性，构造三类特征。</p><div class="formula">温差: temp_range = temp_max - temp_min
-供热度日 HDD: hdd = max(18 - temp_avg, 0)
-供冷度日 CDD: cdd = max(temp_avg - 26, 0)
-周期编码: sin(2πt/T), cos(2πt/T)
-滞后特征: lag_k = y(d-k)
-滚动均值: roll_mean_n = (1/n) * Σ y(d-i), i=1..n</div></section>
-<section><h2>3. 气象因素与 GLM 回归分析</h2><p><code>GLM</code>（广义线性模型）用联系函数把响应变量均值和线性预测器连接起来。专业名词备注：<code>identity link</code>（恒等联系函数），<code>Gaussian</code>（高斯/正态分布），<code>OLS</code>（普通最小二乘）。</p><div class="formula">指数族形式: f(y;θ,φ)=exp((yθ-b(θ))/a(φ)+c(y,φ))
-GLM 框架: g(E[y|X]) = η = Xβ
-本题连续负荷近似 Gaussian，取 g(μ)=μ:
-E[y|X] = Xβ
-Ridge 目标函数: min ||y-Xβ||² + λ||β||²</div><img src="{image_uri(OUTPUT_DIR / '01_weather_regression.png')}" alt="weather regression"><h3>相关性最强气象因素</h3>{fmt_df(corr_rank, "{:.4f}")}<h3>GLM 回归系数摘要</h3>{fmt_df(ols_df[ols_df["term"].isin(REG_WEATHER)].copy(), "{:.4f}")}</section>
-<section><h2>4. 模型训练与评估方法</h2><p>候选模型包括 <code>Ridge</code>（岭回归）、<code>RandomForestRegressor</code>（随机森林回归器，Bagging 思想）、<code>XGBRegressor</code>（XGBoost 梯度提升回归器，Boosting 思想）、<code>StackingRegressor</code>（堆叠集成回归器）。</p><div class="formula">留出法: Train = 2012-01-15..2014-10-31, Validation = 2014-11-01..2014-12-31
-k折交叉验证: RMSE_cv_mean = (1/k)ΣRMSE_i, RMSE_cv_std = sqrt(Σ(RMSE_i-mean)²/(k-1))
-自助法: 从训练集有放回抽样，袋外样本 OOB 用于误差估计
-RMSE = sqrt((1/n)Σ(y_i-yhat_i)²)
-MAE = (1/n)Σ|y_i-yhat_i|
-MAPE = (100/n)Σ|y_i-yhat_i|/y_i
-R² = 1 - SSE/SST</div><img src="{image_uri(OUTPUT_DIR / '02_model_training_comparison.png')}" alt="model comparison"><h3>训练日志</h3>{fmt_df(training_log_df, "{:.3f}")}<h3>性能对比</h3>{fmt_df(performance_df.sort_values(["target", "RMSE"]), "{:.3f}")}</section>
-<section><h2>5. 模型选择、统计检验与模型文件</h2><p>选择规则：优先选择验证集 <code>RMSE</code>（均方根误差）最小的模型；若非常接近，再参考时间序列交叉验证均值和稳定性。最终模型用 2012-2014 全量可用样本重新训练，并保存为 <code>joblib</code>（Python 模型序列化文件）。</p><h3>最终模型选择</h3>{fmt_df(selection_df, "{:.3f}")}<h3>模型文件清单</h3>{fmt_df(manifest_df[["target_cn","selected_model","model_file","feature_count"]], "{:.0f}")}<h3>显著性检验</h3><p><code>paired T-test</code>（配对样本 T 检验）比较同一验证日期上两个模型的误差均值；<code>McNemar test</code>（麦克尼马尔检验）原用于分类，本项目将“误差≤实际值5%”定义为预测正确，再比较两个模型犯错模式。</p>{fmt_df(tests_df, "{:.4f}")}</section>
-<section><h2>6. 验证集拟合过程</h2><p>下图展示最终入选模型在 2014-11-01 至 2014-12-31 留出验证集上的预测曲线。这个过程用于观察模型是否只在平均指标上好看，还是能跟随真实趋势。</p><img src="{image_uri(OUTPUT_DIR / '03_validation_fit.png')}" alt="validation fit"></section>
-<section><h2>7. 2015-01-11 至 2015-01-17 递推预测</h2><p>预测采用递推法：2015-01-11 使用 2015-01-10 及以前真实负荷；2015-01-12 起，<code>lag_1</code>（前一日滞后项）会使用上一天预测值，避免把目标期缺失负荷当作真实已知值。</p><img src="{image_uri(OUTPUT_DIR / '04_final_prediction.png')}" alt="final prediction"><h3>最终预测表</h3>{fmt_df(final_table, "{:.2f}")}<img src="{image_uri(OUTPUT_DIR / '05_history_forecast_context.png')}" alt="history context"></section>
-<section><h2>8. 结论与可复现性</h2><p>温度相关因素（平均温、最低温、CDD/HDD）与负荷关系最明显，但短期负荷预测还强烈依赖昨日、上周同日和滚动窗口特征。最终模型文件、训练日志、验证预测、统计检验和网页报告均已输出，后续修改可以通过 Git 版本管理逐版保存。</p></section>
-</main></body></html>"""
-    (OUTPUT_DIR / "project2_report.html").write_text(report, encoding="utf-8")
-
-
 def save_outputs(
     corr_df: pd.DataFrame,
     ols_df: pd.DataFrame,
@@ -740,7 +637,6 @@ def main() -> None:
 
     save_figures(train_2012_2014, corr_df, ols_df, performance_df, validation_df, pred_df)
     save_outputs(corr_df, ols_df, performance_df, validation_df, training_log_df, selection_df, tests_df, manifest_df, pred_df)
-    generate_report(daily, corr_df, ols_df, performance_df, validation_df, training_log_df, selection_df, tests_df, manifest_df, pred_df)
 
     print("Project 2 outputs saved to:", OUTPUT_DIR)
     print((OUTPUT_DIR / "project2_final_prediction_2015_01_11_17.csv").read_text(encoding="utf-8-sig"))
