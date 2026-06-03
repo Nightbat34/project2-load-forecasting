@@ -1,0 +1,7 @@
+﻿role,model,function_name,learning_strategy,why_used
+a,Ridge,Ridge: Ridge Regression,Linear + L2 Regularization,Interpretable linear baseline
+b,RandomForest,RandomForestRegressor,Bagging: parallel tree averaging,Robust to non-linearity and outliers
+c,XGBoost,XGBRegressor (CUDA),Boosting: sequential residual fitting,Complex non-linear pattern capture
+d,SVR,SVR (RBF kernel),Kernel method: epsilon-insensitive hyperplane,Complementary to tree models
+e,KNN,K-Nearest Neighbors,Distance-based similar day matching,Non-parametric similarity-based
+a+b+c+d+e,Stacking,StackingRegressor: 5 base + Ridge meta,Meta-learner learns optimal combination,Maximize ensemble diversity

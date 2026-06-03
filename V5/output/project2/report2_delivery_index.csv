@@ -1,0 +1,7 @@
+﻿file,purpose
+report2_model_tuning_optimization.html,第二次汇报 HTML 展示版
+report2_model_tuning_optimization.md,第二次汇报 Markdown 版
+report2_model_tuning_optimization.txt,第二次汇报 TXT 版
+project2_final_prediction_2015_01_11_17.csv,最终 7 天预测结果
+project2_model_performance.csv,模型性能结果
+project2_optuna_trials.csv,Optuna 750 条调参记录
