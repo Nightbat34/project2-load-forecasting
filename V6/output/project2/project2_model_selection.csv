@@ -1,0 +1,4 @@
+﻿target,selected_model,selection_rule,validation_RMSE,cv_RMSE_mean,model_file
+日平均负荷,Stacking,验证集 RMSE 最小,467.33,488.97,output\project2\models\load_mean_Stacking.joblib
+日最高负荷,Stacking,验证集 RMSE 最小,605.54,700.37,output\project2\models\load_max_Stacking.joblib
+日最低负荷,Stacking,验证集 RMSE 最小,348.43,379.62,output\project2\models\load_min_Stacking.joblib

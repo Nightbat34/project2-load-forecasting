@@ -1,0 +1,7 @@
+﻿file,purpose
+report2_model_tuning_optimization.html,第二部分最终汇报 HTML
+report2_model_tuning_optimization.md,第二部分最终汇报 Markdown
+part3_integration_notes.md,第三部分网页/成品展示/模型调用对接说明
+project2_final_prediction_2015_01_11_17.csv,正式 Stacking 预测
+project2_deep_learning_performance.csv,PyTorch GRU/LSTM/Attention-GRU 结果
+project2_rolling_4week_validation.csv,4周滚动验证

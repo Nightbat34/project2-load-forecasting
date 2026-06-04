@@ -1,0 +1,4 @@
+﻿target,n_dates,n_models,friedman_chi2,friedman_p_value,model_avg_ranks,best_by_rank,conclusion
+日平均负荷,183,6,134.0851,0.0,"{""KNN"": 4.6, ""RandomForest"": 3.37, ""Ridge"": 3.14, ""SVR"": 4.1, ""Stacking"": 2.67, ""XGBoost"": 3.11}",Stacking,p < 0.05，模型间存在显著差异
+日最高负荷,183,6,177.8509,0.0,"{""KNN"": 4.58, ""RandomForest"": 3.22, ""Ridge"": 3.43, ""SVR"": 4.37, ""Stacking"": 2.48, ""XGBoost"": 2.91}",Stacking,p < 0.05，模型间存在显著差异
+日最低负荷,183,6,123.9992,0.0,"{""KNN"": 4.62, ""RandomForest"": 3.14, ""Ridge"": 3.27, ""SVR"": 3.96, ""Stacking"": 2.67, ""XGBoost"": 3.34}",Stacking,p < 0.05，模型间存在显著差异

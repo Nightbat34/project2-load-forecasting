@@ -1,0 +1,4 @@
+﻿target,model,residual_n,residual_mean,residual_std,Shapiro_Wilk_W,Shapiro_Wilk_p,Shapiro_Wilk_conclusion,Dagostino_K2,Dagostino_p,Dagostino_conclusion,KS_statistic,KS_p,KS_conclusion
+日平均负荷,Stacking,183,132.3338,448.205,0.720664,0.0,拒绝正态假设,178.064477,0.0,拒绝正态假设,0.160956,0.000131,拒绝正态假设
+日最高负荷,Stacking,183,166.7044,582.1369,0.760619,0.0,拒绝正态假设,162.469908,0.0,拒绝正态假设,0.167882,5.6e-05,拒绝正态假设
+日最低负荷,Stacking,183,138.0051,319.9292,0.840794,0.0,拒绝正态假设,103.092662,0.0,拒绝正态假设,0.130079,0.003688,拒绝正态假设

@@ -1,0 +1,23 @@
+{
+  "version": "V6",
+  "purpose": "PyTorch GRU/LSTM/Attention-GRU exploration; final main model remains V5 Stacking",
+  "device": "cuda",
+  "cuda_available": true,
+  "cuda_name": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "seq_len": 28,
+  "train_period": "<= 2014-06-30",
+  "validation_period": "2014-07-01 to 2014-12-31",
+  "models": [
+    "GRU",
+    "LSTM",
+    "Attention-GRU"
+  ],
+  "best_deep_model_by_avg_rmse": "GRU",
+  "artifacts": {
+    "performance": "project2_deep_learning_performance.csv",
+    "validation_predictions": "project2_deep_learning_validation_predictions.csv",
+    "training_history": "project2_deep_learning_training_history.csv",
+    "forecast": "project2_deep_learning_forecast_2015_01_11_17.csv",
+    "rolling_4week_validation": "project2_rolling_4week_validation.csv"
+  }
+}
