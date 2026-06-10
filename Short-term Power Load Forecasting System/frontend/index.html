@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>电力系统短期负荷预测系统</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Project 2 · Final Dashboard</p>
+          <h1>电力系统短期负荷预测系统</h1>
+          <p class="subtitle">
+            基于历史 15 分钟负荷与气象因素，展示 2014 年负荷规律、模型训练效果与
+            2015-01-11 至 2015-01-17 的 7 天预测结果。
+          </p>
+        </div>
+        <nav class="nav-actions" aria-label="页面导航">
+          <a href="#forecast">预测结果</a>
+          <a href="#model">模型效果</a>
+          <a href="#weather">气象分析</a>
+          <a href="#handoff">对接说明</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero-grid" aria-label="项目概览">
+          <div class="hero-panel">
+            <div class="status-row">
+              <span class="status-dot"></span>
+              <span>最终主模型：Stacking 集成回归</span>
+            </div>
+            <h2>未来 7 天负荷预测与模型可信度展示</h2>
+            <p>
+              页面采用静态数据驱动，所有图表均从 <code>assets/data/dashboard_data.json</code>
+              读取，适合打包给其他组员合并到最终成品网页。
+            </p>
+            <div class="hero-actions">
+              <a class="primary-link" href="assets/data/project2_final_prediction_2015_01_11_17.csv">下载预测 CSV</a>
+              <a class="ghost-link" href="overfitting.html">查看过拟合分析</a>
+            </div>
+          </div>
+          <div class="kpi-grid" id="kpiGrid"></div>
+        </section>
+
+        <section class="panel section-panel" id="forecast">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Forecast</p>
+              <h2>2015-01-11 至 2015-01-17 预测结果</h2>
+            </div>
+            <div class="segmented" role="tablist" aria-label="预测目标切换">
+              <button class="segment active" data-target="mean" type="button">日平均</button>
+              <button class="segment" data-target="max" type="button">日最高</button>
+              <button class="segment" data-target="min" type="button">日最低</button>
+            </div>
+          </div>
+          <div class="chart-layout">
+            <div class="chart-card wide">
+            <div class="chart-title">
+                <h3>7 天连续预测曲线与负荷区间</h3>
+                <span id="forecastChartCaption">区间带：日最低至日最高</span>
+              </div>
+              <div class="chart-box" id="forecastChart" aria-label="7天预测曲线"></div>
+            </div>
+            <div class="table-card">
+              <div class="chart-title">
+                <h3>预测明细</h3>
+                <span>MW</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>日期</th>
+                      <th>星期</th>
+                      <th>最低</th>
+                      <th>平均</th>
+                      <th>最高</th>
+                    </tr>
+                  </thead>
+                  <tbody id="forecastTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="history">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Historical Load</p>
+              <h2>2014 年负荷持续曲线与日特征</h2>
+            </div>
+            <div class="meta-pill" id="historyStats"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <h3>2014 日最低 / 日平均 / 日最高负荷</h3>
+              <span id="historyWindowLabel">90 天窗口</span>
+            </div>
+            <div class="range-controls" aria-label="历史曲线时间窗口控制">
+              <div class="quick-ranges">
+                <button class="range-button active" data-window="90" type="button">90 天</button>
+                <button class="range-button" data-window="180" type="button">180 天</button>
+                <button class="range-button" data-window="365" type="button">全年</button>
+                <button class="range-button wide" data-quarter="0" type="button">第一季度<br><small>1-3月</small></button>
+                <button class="range-button wide" data-quarter="91" type="button">第二季度<br><small>4-6月</small></button>
+                <button class="range-button wide" data-quarter="182" type="button">第三季度<br><small>7-9月</small></button>
+                <button class="range-button wide" data-quarter="273" type="button">第四季度<br><small>10-12月</small></button>
+              </div>
+              <label class="range-slider-label">
+                <span>拖动查看时间段</span>
+                <input id="historyRange" type="range" min="0" max="275" value="0" />
+              </label>
+            </div>
+            <p class="chart-help">季度按钮用于快速定位 2014 年不同季节负荷变化；图例标明红、蓝、绿三条曲线分别代表的负荷类型。</p>
+            <div class="chart-box tall" id="historyChart" aria-label="2014全年负荷曲线"></div>
+          </div>
+        </section>
+
+        <section class="two-column" id="model">
+          <div class="panel section-panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Model</p>
+                <h2>模型训练与验证表现</h2>
+              </div>
+            </div>
+            <div class="model-stack">
+              <div class="model-node">Ridge</div>
+              <div class="model-node">RandomForest</div>
+              <div class="model-node accent">XGBoost</div>
+              <div class="model-node muted">SVR</div>
+              <div class="model-node muted">KNN</div>
+              <div class="arrow">↓</div>
+              <div class="model-node final">Ridge 元学习器</div>
+            </div>
+            <div class="chart-card inner">
+              <div class="chart-title">
+                <h3>Stacking 验证集指标</h3>
+                <span>2014 下半年</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>目标</th>
+                      <th>RMSE</th>
+                      <th>MAPE</th>
+                      <th>R²</th>
+                    </tr>
+                  </thead>
+                  <tbody id="performanceTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel section-panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Generalization</p>
+                <h2>过拟合检测</h2>
+              </div>
+            </div>
+            <div class="notice">
+              <strong>结论：</strong>
+              训练集 R² 接近 0.99，验证集平均 R² 为 0.8546，存在过拟合倾向，但验证集表现仍可接受。
+            </div>
+            <div class="chart-card inner">
+              <div class="chart-title">
+                <h3>训练集 vs 验证集 R²</h3>
+                <span>Stacking</span>
+              </div>
+              <div class="chart-box compact-chart" id="r2Chart" aria-label="R2对比图"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="weather">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Weather Factors</p>
+              <h2>气象因素与负荷关系</h2>
+            </div>
+            <select class="select" id="weatherTargetSelect" aria-label="选择气象分析目标">
+              <option value="日平均负荷">日平均负荷</option>
+              <option value="日最高负荷">日最高负荷</option>
+              <option value="日最低负荷">日最低负荷</option>
+            </select>
+          </div>
+          <div class="chart-layout">
+            <div class="chart-card wide">
+              <div class="chart-title">
+                <h3>气象因素 Pearson 相关系数</h3>
+                <span id="weatherCaption">日平均负荷</span>
+              </div>
+              <div class="chart-box" id="weatherChart" aria-label="气象相关性条形图"></div>
+            </div>
+            <div class="table-card">
+              <div class="chart-title">
+                <h3>回归摘要</h3>
+                <span>OLS</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>变量</th>
+                      <th>系数</th>
+                      <th>p值</th>
+                    </tr>
+                  </thead>
+                  <tbody id="regressionTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="validation">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Validation</p>
+              <h2>验证期真实值与预测值</h2>
+            </div>
+            <div class="segmented" role="tablist" aria-label="验证目标切换">
+              <button class="validation-segment active" data-target="日平均负荷" type="button">日平均</button>
+              <button class="validation-segment" data-target="日最高负荷" type="button">日最高</button>
+              <button class="validation-segment" data-target="日最低负荷" type="button">日最低</button>
+            </div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">
+              <h3>验证期真实值与预测值对比</h3>
+              <span id="validationCaption">31 天窗口</span>
+            </div>
+            <div class="range-controls compact-range" aria-label="验证曲线时间窗口控制">
+              <div class="quick-ranges">
+                <button class="validation-range-button active" data-window="31" type="button">31 天<br><small>约1个月</small></button>
+                <button class="validation-range-button" data-window="62" type="button">62 天<br><small>约2个月</small></button>
+                <button class="validation-range-button" data-window="183" type="button">全部<br><small>验证期</small></button>
+              </div>
+              <label class="range-slider-label">
+                <span>拖动查看月份</span>
+                <input id="validationRange" type="range" min="0" max="152" value="0" />
+              </label>
+            </div>
+            <p class="chart-help">默认展示约 1 个月窗口，拖动滑块可逐日平移查看 2014 下半年验证期的真实值与预测值。</p>
+            <div class="chart-box tall" id="validationChart" aria-label="验证期拟合曲线"></div>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="handoff">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Integration</p>
+              <h2>后续网页合并与模型调用说明</h2>
+            </div>
+          </div>
+          <div class="handoff-grid">
+            <div>
+              <h3>静态展示合并</h3>
+              <p>
+                直接复制整个 <code>Short-term Power Load Forecasting System</code> 文件夹即可。页面入口是 <code>frontend/index.html</code>，
+                数据统一在 <code>assets/data/dashboard_data.json</code>，图片在
+                <code>assets/images</code>，样式和脚本在 <code>assets/css</code> 与
+                <code>assets/js</code>。
+              </p>
+            </div>
+            <div>
+              <h3>模型接口预留</h3>
+              <p>
+                三个 Stacking 模型已放入 <code>models/</code>。后续若要做后端预测服务，
+                可读取 <code>code/project2_forecast_v5_base.py</code> 中的特征工程和
+                <code>project2_model_manifest.csv</code> 中的特征列表。
+              </p>
+            </div>
+            <div>
+              <h3>维护建议</h3>
+              <p>
+                展示层不重新训练模型，避免部署不稳定。若要替换模型结果，只更新 CSV 后重新生成
+                <code>dashboard_data.json</code>，网页结构无需改动。
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="tooltip" id="tooltip" role="status" aria-live="polite"></div>
+    <script src="assets/data/dashboard_data.js"></script>
+    <script src="assets/js/dashboard.js"></script>
+  </body>
+</html>

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>电力系统短期负荷预测系统 - 过拟合与模型训练技术分析</title>
+    <link rel="stylesheet" href="assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Technical Audit</p>
+          <h1>过拟合检测、参数调优与模型纠偏分析</h1>
+          <p class="subtitle">
+            本页基于 V6/V6-1 实际训练日志、保存模型和深度学习实验结果整理，说明 Stacking 主模型为什么有效、哪里存在过拟合风险，以及预测值如何保持业务量纲和物理约束。
+          </p>
+        </div>
+        <nav class="nav-actions">
+          <a href="index.html">返回看板</a>
+          <a href="../docs/V6_overfitting_and_stacking_analysis.md">原始分析</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero-grid">
+          <div class="hero-panel">
+            <div class="status-row">
+              <span class="status-dot"></span>
+              <span>最终主模型：Stacking 集成回归</span>
+            </div>
+            <h2>训练拟合很强，验证集仍保持可用泛化能力</h2>
+            <p>
+              Stacking 平均训练集 R² 为 <strong>0.9889</strong>，验证集平均 R² 为
+              <strong>0.8546</strong>。这说明模型存在过拟合倾向，但在 2014 下半年未参与训练的数据上仍能解释约 85% 的负荷波动。
+            </p>
+          </div>
+          <div class="kpi-grid">
+            <article class="kpi-card">
+              <div class="kpi-label">训练集平均 R²</div>
+              <div class="kpi-value">0.9889</div>
+              <div class="kpi-note">2012-01-15 至 2014-06-30</div>
+            </article>
+            <article class="kpi-card">
+              <div class="kpi-label">验证集平均 R²</div>
+              <div class="kpi-value">0.8546</div>
+              <div class="kpi-note">2014-07-01 至 2014-12-31</div>
+            </article>
+            <article class="kpi-card">
+              <div class="kpi-label">平均 R² 差距</div>
+              <div class="kpi-value">0.1342</div>
+              <div class="kpi-note">训练集 R² - 验证集 R²</div>
+            </article>
+            <article class="kpi-card">
+              <div class="kpi-label">平均验证 MAPE</div>
+              <div class="kpi-value">4.326%</div>
+              <div class="kpi-note">三个目标平均</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel section-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Overfitting Check</p>
+              <h2>训练集与验证集差距</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>预测目标</th>
+                  <th>训练集 R²</th>
+                  <th>验证集 R²</th>
+                  <th>R² 差距</th>
+                  <th>训练 RMSE</th>
+                  <th>验证 RMSE</th>
+                  <th>风险判断</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>日平均负荷</td><td>0.9906</td><td>0.8482</td><td>0.1424</td><td>142.55</td><td>467.33</td><td>有过拟合倾向</td></tr>
+                <tr><td>日最高负荷</td><td>0.9924</td><td>0.8497</td><td>0.1428</td><td>165.76</td><td>605.54</td><td>有过拟合倾向</td></tr>
+                <tr><td>日最低负荷</td><td>0.9836</td><td>0.8660</td><td>0.1175</td><td>136.91</td><td>348.43</td><td>有过拟合倾向</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="notice">
+            解释：训练集分数明显高于验证集，说明模型对历史训练期规律拟合得很充分；但验证集 R² 仍在 0.85 左右，没有出现泛化崩塌。因此最终表述应为“存在过拟合倾向，但预测能力仍可接受”。
+          </div>
+        </section>
+
+        <section class="two-column">
+          <div class="panel section-panel">
+            <p class="eyebrow">Stacking Structure</p>
+            <h2>基学习器与元学习器</h2>
+            <div class="model-stack">
+              <div class="model-node">岭回归<br><small>Ridge</small></div>
+              <div class="model-node">随机森林<br><small>RandomForest / RF</small></div>
+              <div class="model-node accent">极端梯度提升<br><small>XGBoost</small></div>
+              <div class="model-node muted">支持向量回归<br><small>SVR</small></div>
+              <div class="model-node muted">K近邻回归<br><small>KNN</small></div>
+              <div class="arrow">↓</div>
+              <div class="model-node final">岭回归元学习器<br><small>Ridge meta learner, alpha=10.0</small></div>
+            </div>
+            <p class="chart-help">
+              三个目标分别训练一套 Stacking。内部基模型为岭回归 Ridge、随机森林 RandomForest、极端梯度提升 XGBoost、支持向量回归 SVR、K近邻回归 KNN，元学习器为岭回归 Ridge(alpha=10.0)，Stacking 参数为 cv=3。
+            </p>
+          </div>
+
+          <div class="panel section-panel">
+            <p class="eyebrow">Meta Weights</p>
+            <h2>元学习器权重解释</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>目标</th>
+                    <th>岭回归<br><small>Ridge</small></th>
+                    <th>随机森林<br><small>RandomForest / RF</small></th>
+                    <th>极端梯度提升<br><small>XGBoost</small></th>
+                    <th>支持向量回归<br><small>SVR</small></th>
+                    <th>K近邻回归<br><small>KNN</small></th>
+                    <th>截距<br><small>intercept</small></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>日平均</td><td>0.4212</td><td>-0.0582</td><td>0.7009</td><td>-0.1194</td><td>0.0555</td><td>38.84</td></tr>
+                  <tr><td>日最高</td><td>0.3086</td><td>-0.0412</td><td>0.8345</td><td>-0.2141</td><td>0.0749</td><td>422.79</td></tr>
+                  <tr><td>日最低</td><td>0.2584</td><td>0.0751</td><td>0.7734</td><td>-0.1489</td><td>0.0457</td><td>20.88</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="chart-help">
+              极端梯度提升 XGBoost 权重最高，说明它是主贡献模型；支持向量回归 SVR 权重为负，说明元学习器在纠正其系统性偏差；K近邻回归 KNN 权重较小，说明其训练集记忆性强但泛化贡献有限。
+            </p>
+          </div>
+        </section>
+
+        <section class="panel section-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Tuning Parameters</p>
+              <h2>主要调参结果与过拟合来源</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>目标</th><th>模型</th><th>关键参数</th><th>验证表现/风险</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>日平均</td><td>极端梯度提升<br><small>XGBoost</small></td><td>n_estimators=565, max_depth=11, learning_rate=0.0283, subsample=0.8762</td><td>R²=0.8258；深树带来较强拟合能力</td></tr>
+                <tr><td>日最高</td><td>极端梯度提升<br><small>XGBoost</small></td><td>n_estimators=473, max_depth=5, learning_rate=0.0593, subsample=0.7072</td><td>R²=0.8399；泛化较好</td></tr>
+                <tr><td>日最低</td><td>极端梯度提升<br><small>XGBoost</small></td><td>n_estimators=135, max_depth=3, learning_rate=0.1683, reg_alpha=0.0634</td><td>R²=0.8462；相对更克制</td></tr>
+                <tr><td>日平均</td><td>随机森林<br><small>RandomForest / RF</small></td><td>n_estimators=162, max_depth=16, min_samples_leaf=2</td><td>训练拟合强，验证 R²=0.7982</td></tr>
+                <tr><td>日最高</td><td>随机森林<br><small>RandomForest / RF</small></td><td>n_estimators=164, max_depth=21, min_samples_leaf=1</td><td>树深较高，是过拟合来源之一</td></tr>
+                <tr><td>日最低</td><td>随机森林<br><small>RandomForest / RF</small></td><td>n_estimators=420, max_depth=18, min_samples_leaf=4</td><td>验证 R²=0.7983</td></tr>
+                <tr><td>三目标</td><td>K近邻回归<br><small>KNN</small></td><td>n_neighbors=5 或 7, weights=distance</td><td>训练集近似记忆，验证 R² 约 0.66-0.67</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="two-column">
+          <div class="panel section-panel">
+            <p class="eyebrow">Standardization</p>
+            <h2>标准化、z-score 与逆转化</h2>
+            <div class="notice">
+              <strong>传统 Stacking 主模型：</strong>岭回归 Ridge、支持向量回归 SVR、K近邻回归 KNN 使用 Pipeline(StandardScaler + 模型)，标准化只作用于特征 X：
+              <code>z = (x - μ) / σ</code>。随机森林 RandomForest 和极端梯度提升 XGBoost 不依赖标准化。目标 Y 未做标准化，因此输出直接是 MW，不需要目标逆转化。
+            </div>
+            <div class="notice">
+              <strong>深度学习探索模型：</strong>特征 X 和目标 Y 都用 StandardScaler。预测后使用
+              <code>y = z * σ_y + μ_y</code> 逆转化回 MW。目标均值约为：
+              日平均 6802.377、日最高 8648.174、日最低 4746.300；目标标准差约为：
+              1387.580、1804.136、1016.521。
+            </div>
+          </div>
+
+          <div class="panel section-panel">
+            <p class="eyebrow">Correction</p>
+            <h2>预测纠偏与物理约束</h2>
+            <div class="notice">
+              电力负荷三目标必须满足：<code>日最低负荷 ≤ 日平均负荷 ≤ 日最高负荷</code>，且负荷值必须大于 0。最终 2015-01-11 至 2015-01-17 的 Stacking 预测已检查通过。
+            </div>
+            <p class="chart-help">
+              若未来接入实时预测接口，建议在后端统一增加纠偏层：先将三个预测值按业务含义排序或裁剪，再输出到网页，避免模型偶然产生违反物理规律的结果。
+            </p>
+          </div>
+        </section>
+
+        <section class="panel section-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Deep Learning Exploration</p>
+              <h2>GRU / LSTM / Attention-GRU 与过拟合关系</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>模型</th><th>日平均 R²</th><th>日最高 R²</th><th>日最低 R²</th><th>设置</th><th>结论</th></tr></thead>
+              <tbody>
+                <tr><td>GRU</td><td>0.7969</td><td>0.7773</td><td>0.8864</td><td>seq_len=28, hidden_dim=32, cuda</td><td>泛化尚可，但整体不如 Stacking</td></tr>
+                <tr><td>LSTM</td><td>0.7788</td><td>0.7686</td><td>0.8960</td><td>AdamW lr=5e-4, weight_decay=1e-4</td><td>最低负荷表现好，平均/最高偏弱</td></tr>
+                <tr><td>Attention-GRU</td><td>0.4701</td><td>0.4303</td><td>0.4854</td><td>Temporal Attention + Dropout=0.1</td><td>明显欠拟合/不稳定，不适合作主模型</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="notice">
+            深度学习模型使用 GPU 训练，并加入 Dropout、AdamW 权重衰减和梯度裁剪 <code>clip_grad_norm_=0.5</code>。但由于日粒度样本量有限，GRU/LSTM 没有稳定超过 Stacking；Attention-GRU 参数结构更复杂，反而表现较差。因此深度学习适合作为技术探索和对比，不宜替代当前主模型。
+          </div>
+        </section>
+
+        <section class="panel section-panel">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Final Judgment</p>
+              <h2>最终判断与改进方向</h2>
+            </div>
+          </div>
+          <div class="handoff-grid">
+            <div>
+              <h3>模型是否有用</h3>
+              <p>有用。验证集平均 R²=0.8546，MAPE 约 4.326%，说明模型不是单纯背训练集，对未来半年数据仍有稳定解释能力。</p>
+            </div>
+            <div>
+              <h3>主要问题</h3>
+              <p>模型复杂度偏高，K近邻回归 KNN 训练集记忆性强，随机森林 RandomForest 和极端梯度提升 XGBoost 容量较大，Stacking 内部 cv=3 不是严格时间序列 OOF。</p>
+            </div>
+            <div>
+              <h3>后续建议</h3>
+              <p>保留 Stacking 作为主模型，但可精简为岭回归 Ridge + 随机森林 RandomForest + 极端梯度提升 XGBoost，并把内部交叉验证改成 TimeSeriesSplit 或手工滚动 OOF。</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

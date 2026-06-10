@@ -1,0 +1,4 @@
+﻿target,best_single_model,best_single_RMSE_validation,stacking_RMSE_validation,stacking_improvement_RMSE,best_single_R2_validation,stacking_R2_validation,stacking_improvement_R2,stacking_R2_gap,stacking_RMSE_ratio
+日平均负荷,XGBoost,500.53,467.33,33.2,0.8258,0.8482,0.0224,0.1424,3.278
+日最高负荷,XGBoost,624.95,605.54,19.41,0.8399,0.8497,0.0098,0.1428,3.653
+日最低负荷,XGBoost,373.34,348.43,24.91,0.8462,0.866,0.0198,0.1175,2.545
