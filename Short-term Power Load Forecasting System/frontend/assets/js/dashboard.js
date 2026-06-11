@@ -64,6 +64,7 @@
   }
 
   function clear(node) {
+    if (!node) return;
     node.innerHTML = "";
   }
 
@@ -140,6 +141,7 @@
   }
 
   function renderLineChart(container, series, options = {}) {
+    if (!container) return;
     clear(container);
     const width = options.width || 1040;
     const height = options.height || 330;
@@ -293,6 +295,7 @@
   }
 
   function renderBarChart(container, rows, options = {}) {
+    if (!container) return;
     clear(container);
     const width = options.width || 940;
     const height = options.height || 360;
@@ -360,6 +363,7 @@
       { label: "最终预测期", value: "7 天", note: meta.forecastPeriod },
     ];
     const grid = qs("#kpiGrid");
+    if (!grid) return;
     clear(grid);
     kpis.forEach((kpi) => {
       const card = document.createElement("article");
@@ -374,8 +378,11 @@
   }
 
   function renderForecast() {
+    const chart = qs("#forecastChart");
+    const caption = qs("#forecastChartCaption");
+    if (!chart || !caption) return;
     const config = targetConfig[state.forecastTarget];
-    qs("#forecastChartCaption").textContent = config.label;
+    caption.textContent = config.label;
     const focusValues = data.forecast.map((row) => ({ date: row.date, value: row[config.forecastKey] }));
     const bandValues = data.forecast.map((row) => ({ date: row.date, low: row.load_min, high: row.load_max }));
     const allLines = [
@@ -399,7 +406,7 @@
       },
     ];
     renderLineChart(
-      qs("#forecastChart"),
+      chart,
       allLines,
       {
         height: 360,
@@ -414,6 +421,7 @@
 
   function renderForecastTable() {
     const tbody = qs("#forecastTable");
+    if (!tbody) return;
     clear(tbody);
     data.forecast.forEach((row) => {
       const tr = document.createElement("tr");
@@ -429,8 +437,12 @@
   }
 
   function renderHistory() {
+    const statsNode = qs("#historyStats");
+    const chart = qs("#historyChart");
+    const windowLabel = qs("#historyWindowLabel");
+    if (!statsNode || !chart || !windowLabel) return;
     const stats = data.daily2014Stats;
-    qs("#historyStats").textContent = `全年均值 ${fmt(stats.mean_load, 0)} MW · 最高 ${fmt(stats.max_load, 0)} MW · 最低 ${fmt(stats.min_load, 0)} MW`;
+    statsNode.textContent = `全年均值 ${fmt(stats.mean_load, 0)} MW · 最高 ${fmt(stats.max_load, 0)} MW · 最低 ${fmt(stats.min_load, 0)} MW`;
     const slider = qs("#historyRange");
     const windowSize = Math.min(state.historyWindow, data.daily2014.length);
     const maxStart = Math.max(0, data.daily2014.length - windowSize);
@@ -444,9 +456,9 @@
     const first = source[0]?.date || "";
     const last = source[source.length - 1]?.date || "";
     const label = windowSize >= data.daily2014.length ? "全年" : `${windowSize} 天窗口`;
-    qs("#historyWindowLabel").textContent = `${label} · ${first} 至 ${last}`;
+    windowLabel.textContent = `${label} · ${first} 至 ${last}`;
     renderLineChart(
-      qs("#historyChart"),
+      chart,
       [
         {
           name: "日最高负荷",
@@ -470,6 +482,7 @@
 
   function renderPerformanceTable() {
     const tbody = qs("#performanceTable");
+    if (!tbody) return;
     clear(tbody);
     data.stackingPerformance.forEach((row) => {
       const tr = document.createElement("tr");
@@ -486,6 +499,7 @@
   function renderR2Chart() {
     const rows = data.overfittingStacking;
     const container = qs("#r2Chart");
+    if (!container) return;
     clear(container);
     const width = 720;
     const height = 260;
@@ -550,8 +564,12 @@
   }
 
   function renderWeather() {
+    const caption = qs("#weatherCaption");
+    const chart = qs("#weatherChart");
+    const tbody = qs("#regressionTable");
+    if (!caption || !chart || !tbody) return;
     const target = state.weatherTarget;
-    qs("#weatherCaption").textContent = target;
+    caption.textContent = target;
     const rows = data.weatherCorrelations
       .filter((row) => row.target === target)
       .map((row) => ({
@@ -560,9 +578,8 @@
         value: row.pearson_r,
       }))
       .sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-    renderBarChart(qs("#weatherChart"), rows, { height: 380, left: 240 });
+    renderBarChart(chart, rows, { height: 380, left: 240 });
 
-    const tbody = qs("#regressionTable");
     clear(tbody);
     data.regressionSummary
       .filter((row) => row.target === target && row.term !== "const")
@@ -579,6 +596,9 @@
   }
 
   function renderValidation() {
+    const chart = qs("#validationChart");
+    const caption = qs("#validationCaption");
+    if (!chart || !caption) return;
     const allRows = data.validationStacking.filter((row) => row.target === state.validationTarget);
     const slider = qs("#validationRange");
     const windowSize = Math.min(state.validationWindow, allRows.length);
@@ -593,9 +613,9 @@
     const first = rows[0]?.date || "";
     const last = rows[rows.length - 1]?.date || "";
     const label = windowSize >= allRows.length ? "全部验证期" : `${windowSize} 天窗口`;
-    qs("#validationCaption").textContent = `${state.validationTarget} · ${label} · ${first} 至 ${last}`;
+    caption.textContent = `${state.validationTarget} · ${label} · ${first} 至 ${last}`;
     renderLineChart(
-      qs("#validationChart"),
+      chart,
       [
         {
           name: "真实值",
@@ -650,10 +670,13 @@
       });
     });
 
-    qs("#weatherTargetSelect").addEventListener("change", (evt) => {
-      state.weatherTarget = evt.target.value;
-      renderWeather();
-    });
+    const weatherTargetSelect = qs("#weatherTargetSelect");
+    if (weatherTargetSelect) {
+      weatherTargetSelect.addEventListener("change", (evt) => {
+        state.weatherTarget = evt.target.value;
+        renderWeather();
+      });
+    }
 
     const historyRange = qs("#historyRange");
     if (historyRange) {

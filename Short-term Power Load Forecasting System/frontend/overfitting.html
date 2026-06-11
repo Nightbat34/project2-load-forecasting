@@ -3,21 +3,23 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>电力系统短期负荷预测系统 - 过拟合与模型训练技术分析</title>
+    <title>电力系统短期负荷预测系统 - 模型分析</title>
     <link rel="stylesheet" href="assets/css/styles.css" />
   </head>
   <body>
     <div class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Technical Audit</p>
-          <h1>过拟合检测、参数调优与模型纠偏分析</h1>
+          <p class="eyebrow">Model Analysis</p>
+          <h1>模型训练、过拟合检测与气象因素分析</h1>
           <p class="subtitle">
             本页基于 V6/V6-1 实际训练日志、保存模型和深度学习实验结果整理，说明 Stacking 主模型为什么有效、哪里存在过拟合风险，以及预测值如何保持业务量纲和物理约束。
           </p>
         </div>
         <nav class="nav-actions">
           <a href="index.html">返回看板</a>
+          <a href="#model">模型表现</a>
+          <a href="#weather">气象关系</a>
           <a href="../docs/V6_overfitting_and_stacking_analysis.md">原始分析</a>
         </nav>
       </header>
@@ -56,6 +58,162 @@
               <div class="kpi-value">4.326%</div>
               <div class="kpi-note">三个目标平均</div>
             </article>
+          </div>
+        </section>
+
+        <section class="two-column" id="model">
+          <div class="panel section-panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Model</p>
+                <h2>模型训练与验证表现</h2>
+              </div>
+            </div>
+            <div class="model-stack">
+              <div class="model-node">岭回归<br><small>Ridge</small></div>
+              <div class="model-node">随机森林<br><small>RandomForest / RF</small></div>
+              <div class="model-node accent">极端梯度提升<br><small>XGBoost</small></div>
+              <div class="model-node muted">支持向量回归<br><small>SVR</small></div>
+              <div class="model-node muted">K近邻回归<br><small>KNN</small></div>
+              <div class="arrow">↓</div>
+              <div class="model-node final">岭回归元学习器<br><small>Ridge meta learner</small></div>
+            </div>
+            <div class="chart-card inner">
+              <div class="chart-title">
+                <h3>Stacking 验证集指标</h3>
+                <span>2014 下半年</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>目标</th>
+                      <th>RMSE</th>
+                      <th>MAPE</th>
+                      <th>R²</th>
+                    </tr>
+                  </thead>
+                  <tbody id="performanceTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel section-panel">
+            <div class="section-head compact">
+              <div>
+                <p class="eyebrow">Generalization</p>
+                <h2>过拟合检测</h2>
+              </div>
+            </div>
+            <div class="notice">
+              <strong>结论：</strong>
+              训练集 R² 接近 0.99，验证集平均 R² 为 0.8546，存在过拟合倾向，但验证集表现仍可接受。
+            </div>
+            <div class="chart-card inner">
+              <div class="chart-title">
+                <h3>训练集 vs 验证集 R²</h3>
+                <span>Stacking</span>
+              </div>
+              <div class="chart-box compact-chart" id="r2Chart" aria-label="R2对比图"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="weather">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Weather Factors</p>
+              <h2>气象因素与负荷关系</h2>
+            </div>
+            <select class="select" id="weatherTargetSelect" aria-label="选择气象分析目标">
+              <option value="日平均负荷">日平均负荷</option>
+              <option value="日最高负荷">日最高负荷</option>
+              <option value="日最低负荷">日最低负荷</option>
+            </select>
+          </div>
+          <div class="chart-layout">
+            <div class="chart-card wide">
+              <div class="chart-title">
+                <h3>气象因素 Pearson 相关系数</h3>
+                <span id="weatherCaption">日平均负荷</span>
+              </div>
+              <div class="chart-box" id="weatherChart" aria-label="气象相关性条形图"></div>
+            </div>
+            <div class="table-card">
+              <div class="chart-title">
+                <h3>回归摘要</h3>
+                <span>OLS</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>变量</th>
+                      <th>系数</th>
+                      <th>p值</th>
+                    </tr>
+                  </thead>
+                  <tbody id="regressionTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-panel" id="process-evidence">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Process Evidence</p>
+              <h2>项目训练过程与结果图</h2>
+            </div>
+          </div>
+          <p class="chart-help">
+            下面保留了本项目建模过程中的关键结果图，覆盖训练验证表现、模型泛化差距、Stacking 与单模型对比、验证期拟合、最终预测以及深度学习探索，方便答辩或对接人员快速追溯“为什么选这个模型”。
+          </p>
+          <div class="evidence-grid">
+            <figure class="evidence-card wide">
+              <img src="assets/images/03_validation_fit.png" alt="验证期真实值与预测值拟合图" />
+              <figcaption>
+                <strong>验证期拟合效果</strong>
+                <span>对比 2014 下半年真实负荷与 Stacking 预测值，观察趋势跟随能力和局部偏差。</span>
+              </figcaption>
+            </figure>
+            <figure class="evidence-card">
+              <img src="assets/images/01_stacking_train_validation_r2.png" alt="Stacking训练集和验证集R方对比图" />
+              <figcaption>
+                <strong>Stacking 训练/验证 R²</strong>
+                <span>展示三个负荷目标的训练集与验证集 R² 差距，是判断过拟合风险的核心证据。</span>
+              </figcaption>
+            </figure>
+            <figure class="evidence-card">
+              <img src="assets/images/02_all_models_r2_gap.png" alt="各模型R方泛化差距热力图" />
+              <figcaption>
+                <strong>各模型泛化差距</strong>
+                <span>KNN 记忆性最强，RF/XGBoost 容量较大，Stacking 需要通过元学习器进行综合纠偏。</span>
+              </figcaption>
+            </figure>
+            <figure class="evidence-card">
+              <img src="assets/images/03_stacking_vs_best_single.png" alt="Stacking与最佳单模型对比图" />
+              <figcaption>
+                <strong>Stacking 与最佳单模型</strong>
+                <span>用于说明最终主模型并非盲目堆叠，而是在验证表现和稳定性之间做了折中。</span>
+              </figcaption>
+            </figure>
+            <figure class="evidence-card">
+              <img src="assets/images/13_deep_learning_vs_stacking.png" alt="深度学习模型与Stacking对比图" />
+              <figcaption>
+                <strong>深度学习探索对比</strong>
+                <span>GRU/LSTM/Attention-GRU 使用 GPU 训练，但样本规模下整体未稳定超过 Stacking。</span>
+              </figcaption>
+            </figure>
+            <figure class="evidence-card wide">
+              <img src="assets/images/04_final_prediction.png" alt="2015年1月11日至17日最终负荷预测图" />
+              <figcaption>
+                <strong>最终 7 天预测输出</strong>
+                <span>展示 2015-01-11 至 2015-01-17 的日最低、日平均、日最高负荷预测，已通过物理约束检查。</span>
+              </figcaption>
+            </figure>
           </div>
         </section>
 
@@ -237,5 +395,8 @@
         </section>
       </main>
     </div>
+    <div class="tooltip" id="tooltip" role="status" aria-live="polite"></div>
+    <script src="assets/data/dashboard_data.js"></script>
+    <script src="assets/js/dashboard.js"></script>
   </body>
 </html>

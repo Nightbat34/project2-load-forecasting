@@ -468,8 +468,10 @@ tbody tr:hover {
 .model-node {
   min-height: 44px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   padding: 8px;
   border: 1px solid #c8d7e3;
   border-radius: 6px;
@@ -477,7 +479,15 @@ tbody tr:hover {
   color: #253746;
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.25;
   text-align: center;
+}
+
+.model-node small {
+  display: block;
+  font-size: 11px;
+  line-height: 1.25;
+  word-break: keep-all;
 }
 
 .model-node.accent {
@@ -545,6 +555,67 @@ tbody tr:hover {
   color: var(--muted);
   line-height: 1.75;
   font-size: 14px;
+}
+
+.handoff-note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.handoff-note p {
+  margin: 0;
+}
+
+.handoff-note code {
+  font-size: 11px;
+}
+
+.evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.evidence-card {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fbfdff;
+}
+
+.evidence-card.wide {
+  grid-column: 1 / -1;
+}
+
+.evidence-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 8.5;
+  object-fit: contain;
+  background: #ffffff;
+  border-bottom: 1px solid var(--line);
+}
+
+.evidence-card figcaption {
+  display: grid;
+  gap: 5px;
+  padding: 12px 14px;
+}
+
+.evidence-card figcaption strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.evidence-card figcaption span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .tooltip {
@@ -634,7 +705,8 @@ tbody tr:hover {
   .hero-grid,
   .chart-layout,
   .two-column,
-  .handoff-grid {
+  .handoff-grid,
+  .evidence-grid {
     grid-template-columns: 1fr;
   }
 

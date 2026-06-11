@@ -19,8 +19,9 @@
         </div>
         <nav class="nav-actions" aria-label="页面导航">
           <a href="#forecast">预测结果</a>
-          <a href="#model">模型效果</a>
-          <a href="#weather">气象分析</a>
+          <a href="#history">历史曲线</a>
+          <a href="#validation">验证曲线</a>
+          <a href="overfitting.html">模型分析</a>
           <a href="#handoff">对接说明</a>
         </nav>
       </header>
@@ -39,7 +40,7 @@
             </p>
             <div class="hero-actions">
               <a class="primary-link" href="assets/data/project2_final_prediction_2015_01_11_17.csv">下载预测 CSV</a>
-              <a class="ghost-link" href="overfitting.html">查看过拟合分析</a>
+              <a class="ghost-link" href="overfitting.html">查看模型分析</a>
             </div>
           </div>
           <div class="kpi-grid" id="kpiGrid"></div>
@@ -121,106 +122,6 @@
           </div>
         </section>
 
-        <section class="two-column" id="model">
-          <div class="panel section-panel">
-            <div class="section-head compact">
-              <div>
-                <p class="eyebrow">Model</p>
-                <h2>模型训练与验证表现</h2>
-              </div>
-            </div>
-            <div class="model-stack">
-              <div class="model-node">Ridge</div>
-              <div class="model-node">RandomForest</div>
-              <div class="model-node accent">XGBoost</div>
-              <div class="model-node muted">SVR</div>
-              <div class="model-node muted">KNN</div>
-              <div class="arrow">↓</div>
-              <div class="model-node final">Ridge 元学习器</div>
-            </div>
-            <div class="chart-card inner">
-              <div class="chart-title">
-                <h3>Stacking 验证集指标</h3>
-                <span>2014 下半年</span>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>目标</th>
-                      <th>RMSE</th>
-                      <th>MAPE</th>
-                      <th>R²</th>
-                    </tr>
-                  </thead>
-                  <tbody id="performanceTable"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel section-panel">
-            <div class="section-head compact">
-              <div>
-                <p class="eyebrow">Generalization</p>
-                <h2>过拟合检测</h2>
-              </div>
-            </div>
-            <div class="notice">
-              <strong>结论：</strong>
-              训练集 R² 接近 0.99，验证集平均 R² 为 0.8546，存在过拟合倾向，但验证集表现仍可接受。
-            </div>
-            <div class="chart-card inner">
-              <div class="chart-title">
-                <h3>训练集 vs 验证集 R²</h3>
-                <span>Stacking</span>
-              </div>
-              <div class="chart-box compact-chart" id="r2Chart" aria-label="R2对比图"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel section-panel" id="weather">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Weather Factors</p>
-              <h2>气象因素与负荷关系</h2>
-            </div>
-            <select class="select" id="weatherTargetSelect" aria-label="选择气象分析目标">
-              <option value="日平均负荷">日平均负荷</option>
-              <option value="日最高负荷">日最高负荷</option>
-              <option value="日最低负荷">日最低负荷</option>
-            </select>
-          </div>
-          <div class="chart-layout">
-            <div class="chart-card wide">
-              <div class="chart-title">
-                <h3>气象因素 Pearson 相关系数</h3>
-                <span id="weatherCaption">日平均负荷</span>
-              </div>
-              <div class="chart-box" id="weatherChart" aria-label="气象相关性条形图"></div>
-            </div>
-            <div class="table-card">
-              <div class="chart-title">
-                <h3>回归摘要</h3>
-                <span>OLS</span>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>变量</th>
-                      <th>系数</th>
-                      <th>p值</th>
-                    </tr>
-                  </thead>
-                  <tbody id="regressionTable"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section class="panel section-panel" id="validation">
           <div class="section-head">
             <div>
@@ -254,39 +155,14 @@
           </div>
         </section>
 
-        <section class="panel section-panel" id="handoff">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Integration</p>
-              <h2>后续网页合并与模型调用说明</h2>
-            </div>
-          </div>
-          <div class="handoff-grid">
-            <div>
-              <h3>静态展示合并</h3>
-              <p>
-                直接复制整个 <code>Short-term Power Load Forecasting System</code> 文件夹即可。页面入口是 <code>frontend/index.html</code>，
-                数据统一在 <code>assets/data/dashboard_data.json</code>，图片在
-                <code>assets/images</code>，样式和脚本在 <code>assets/css</code> 与
-                <code>assets/js</code>。
-              </p>
-            </div>
-            <div>
-              <h3>模型接口预留</h3>
-              <p>
-                三个 Stacking 模型已放入 <code>models/</code>。后续若要做后端预测服务，
-                可读取 <code>code/project2_forecast_v5_base.py</code> 中的特征工程和
-                <code>project2_model_manifest.csv</code> 中的特征列表。
-              </p>
-            </div>
-            <div>
-              <h3>维护建议</h3>
-              <p>
-                展示层不重新训练模型，避免部署不稳定。若要替换模型结果，只更新 CSV 后重新生成
-                <code>dashboard_data.json</code>，网页结构无需改动。
-              </p>
-            </div>
-          </div>
+        <section class="handoff-note" id="handoff" aria-label="对接说明">
+          <p>
+            对接说明：直接复制整个 <code>Short-term Power Load Forecasting System</code> 文件夹即可；
+            页面入口为 <code>frontend/index.html</code>，展示数据集中在
+            <code>assets/data/dashboard_data.json</code>。三个 Stacking 模型位于
+            <code>models/</code>，后端预测服务可参考 <code>backend/app.py</code> 与
+            <code>models/project2_model_manifest.csv</code>。展示层不重新训练模型，后续替换结果时优先更新 CSV/JSON 数据文件。
+          </p>
         </section>
       </main>
     </div>
